@@ -22,7 +22,7 @@ def get_route_metrics(route_points):
         distances.append(distance)
 
     total_distance = sum(distances)
-    total_time_taken = (sort_route_points[1]['timestamp'] - sorted_route_points[0]['timestamp']).total_seconds()
+    total_time_taken = (sorted_route_points[-1]['timestamp'] - sorted_route_points[0]['timestamp']).total_seconds()
 
     avg_speed = total_distance / total_time_taken * 3600  # for Km/hour
 
