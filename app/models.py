@@ -1,3 +1,5 @@
+import json
+
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 from . import db
@@ -8,7 +10,7 @@ from sqlalchemy.orm import relationship, backref
 
 class RoutePoint(Model):
     id = Column(Integer, primary_key=True)
-    timestamp = Column(DateTime)
+    timestamp = Column(DateTime, nullable=False)
     lat = Column(Float)
     long = Column(Float)
     route_id = Column(Integer, ForeignKey('route.id'), nullable=False)
@@ -37,16 +39,6 @@ class Vehicle(Model):
     id = Column(Integer, primary_key=True)
     name = Column(String(128), unique=True)
     routes = relationship('Route', backref='vehicle')
-    company_id = Column(Integer, ForeignKey('company.id'), nullable=False)
-
-    def __repr__(self):
-        return f'{self.name}'
-
-
-class Company(Model):
-    id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True)
-    vehicles = relationship('Vehicle', backref='company')
     user_id = Column(String(64), ForeignKey('user.id'), nullable=False)
 
     def __repr__(self):
@@ -56,8 +48,8 @@ class Company(Model):
 class User(Model):
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
     name = Column(String(128), unique=True)
-    password = Column(String(128), unique=True)
-    company = relationship('Company', backref='user')
+    password = Column(String(128))
+    vehicles = relationship('Vehicle', backref='user')
 
     def __repr__(self):
         return f'{self.name}'

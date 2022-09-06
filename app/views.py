@@ -53,7 +53,7 @@ def page_not_found(e):
         404,
     )
 
-
+#db.drop_all()
 db.create_all()
 
 from . import api

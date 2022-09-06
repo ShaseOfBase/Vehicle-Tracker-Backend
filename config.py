@@ -19,7 +19,7 @@ SQLALCHEMY_DATABASE_URI = f'mysql://{user}:{password}@{host}:{port}/{db_name}'
 # SQLALCHEMY_DATABASE_URI = 'postgresql://root:password@localhost/myapp'
 
 # Flask-WTF flag for CSRF
-CSRF_ENABLED = True
+CSRF_ENABLED = False
 
 SQLALCHEMY_TRACK_MODIFICATIONS = False
 

@@ -1,10 +1,10 @@
 from flask_appbuilder.api import BaseApi, expose
 from . import appbuilder, db
-from .models import User, Route, RoutePoint, Company, Vehicle
+from .models import User, Route, RoutePoint, Vehicle
 from flask import request
 import base64
 from sqlalchemy import select
-from helpers import get_route_metrics
+from .helpers import get_route_metrics
 
 
 def user_id_is_valid(user_id):
@@ -32,17 +32,16 @@ def get_route_points_from_query_result(result):
     return route_points
 
 
-class AllPurposeAPI(BaseApi):
+class ModelsAPI(BaseApi):
 
-    route_base = '/api'
+    route_base = '/api/models'
 
     @expose('/user', methods=['POST', 'GET'])
     def user(self):
         try:
             username = request.args['username']
             b64_password = request.args['password']
-      #      password = base64.b64decode(b64_password) todo - re-enable b64
-            password = b64_password
+            password = base64.b64decode(b64_password).decode()
             result = db.session.execute(select(User).where(User.name == username))
             first_result = result.first()
 
@@ -53,7 +52,7 @@ class AllPurposeAPI(BaseApi):
                 if first_result[0].password != password:
                     return self.response(409, message=f"Invalid password")
 
-                return self.response(200, user_id=first_result[0].id)
+                return self.response(200, id=first_result[0].id)
 
             elif request.method == 'POST':
                 if first_result:
@@ -68,48 +67,6 @@ class AllPurposeAPI(BaseApi):
         except Exception as e:
             return self.response(500, error=str(e))
 
-    @expose('/company', methods=['POST', 'GET'])
-    def company(self):
-        try:
-            user_id = request.args['user_id']
-
-            if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
-
-            if request.method == 'GET':
-                result = db.session.execute(select(Company).where(Company.user_id == user_id))
-                first_result = result.first()
-
-                if not first_result:
-                    data = {}
-
-                else:
-                    data = {
-                        'company_name': first_result[0].name,
-                        'company_id': first_result[0].id
-                    }
-
-                return self.response(200, data=data)
-
-            elif request.method == 'POST':
-                company_name = request.args['company_name']
-                result = db.session.execute(select(Company).where(Company.name == company_name))
-                first_result = result.first()
-                if first_result:
-                    return self.response(409, error='Company already exists')
-
-                new_company = Company(name=company_name, user_id=user_id)
-                db.session.add(new_company)
-                db.session.commit()
-
-                data = {
-                    'company_name': company_name,
-                    'company_id': new_company.id
-                }
-
-                return self.response(200, data=data)
-        except Exception as e:
-            return self.response(500, error=str(e))
 
     @expose('/vehicle', methods=['POST', 'GET'])
     def vehicle(self):
@@ -228,4 +185,42 @@ class AllPurposeAPI(BaseApi):
             except Exception as e:
                 return self.response(500, error=str(e))
 
-appbuilder.add_api(AllPurposeAPI)
+
+class MetricsAPI(BaseApi):
+
+    route_base = '/api/metrics'
+
+    @expose('/route', methods=['POST', 'GET'])
+    def fetch(self):
+        try:
+            username = request.args['username']
+            b64_password = request.args['password']
+      #      password = base64.b64decode(b64_password) todo - re-enable b64
+            password = b64_password
+            result = db.session.execute(select(User).where(User.name == username))
+            first_result = result.first()
+
+            if request.method == 'GET':
+                if not first_result:
+                    return self.response(404, message=f"No user found")
+
+                if first_result[0].password != password:
+                    return self.response(409, message=f"Invalid password")
+
+                return self.response(200, user_id=first_result[0].id)
+
+            elif request.method == 'POST':
+                if first_result:
+                    return self.response(402, message=f"User already exists")
+
+                new_user = User(name=username, password=password)
+                db.session.add(new_user)
+                db.session.commit()
+
+                return self.response(200, user_id=new_user.id)
+
+        except Exception as e:
+            return self.response(500, error=str(e))
+
+
+appbuilder.add_api(ModelsAPI)
