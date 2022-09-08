@@ -21,11 +21,12 @@ class RoutePoint(Model):
 
 class Route(Model):
     id = Column(Integer, primary_key=True)
+    label = Column(String(128), nullable=False)
     route_points = relationship('RoutePoint', backref='routes')
     vehicle_id = Column(Integer, ForeignKey('vehicle.id'), nullable=False)
 
     def __repr__(self):
-        return f'route {self.id} - rp count: {len(self.route_points)}'
+        return self.label
 
     def to_dict(self):
         return json.dumps(

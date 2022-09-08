@@ -1,5 +1,6 @@
 import datetime
-from random import randint, random
+import random
+from random import uniform, randint
 import pytest
 from app import db
 from app.models import User, Route, RoutePoint, Vehicle
@@ -11,7 +12,7 @@ def get_random_id(length):
 
 @pytest.fixture
 def test_users():
-    name = f'TestBob{get_random_id(5)}'
+    name = 'test'
     user = User(name=name, password='abc123')
     db.session.add(user)
     db.session.commit()
@@ -29,7 +30,7 @@ def test_vehicles(test_users):
 
 @pytest.fixture
 def test_routes(test_vehicles):
-    route = Route(vehicle_id=test_vehicles)
+    route = Route(label=f'Route_{random.random()}', vehicle_id=test_vehicles)
     db.session.add(route)
     db.session.commit()
     return route.id
@@ -40,8 +41,8 @@ def test_route_points(test_routes):
     route_points = set()
     for _ in range(rp_length):
         route_point = RoutePoint(timestamp=datetime.datetime.now(),
-                                 route_id=test_routes, long=randint(5, 50) + random(),
-                                 lat=randint(5, 50) + random())
+                                 route_id=test_routes, long=uniform(10, 70),
+                                 lat=uniform(10, 70))
         db.session.add(route_point)
 
     db.session.commit()

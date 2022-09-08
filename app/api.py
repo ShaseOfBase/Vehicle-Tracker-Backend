@@ -76,10 +76,8 @@ class ModelsAPI(BaseApi):
             if not user_id_is_valid(user_id):
                 return self.response(409, error="Invalid user ID...")
 
-            company_id = request.args['company_id']
-
             if request.method == 'GET':
-                result = db.session.execute(select(Vehicle).where(Vehicle.company_id == company_id))
+                result = db.session.execute(select(Vehicle).where(Vehicle.user_id == user_id))
 
                 vehicles = []
                 for row in result:
@@ -94,16 +92,16 @@ class ModelsAPI(BaseApi):
                 vehicle_name = request.args['vehicle_name']
 
                 result = db.session.execute(select(Vehicle).where(Vehicle.name == vehicle_name)
-                                            .where(Vehicle.company_id == company_id))
+                                            .where(Vehicle.company_id == user_id))
 
                 if not len(result.all()):
                     return self.response(409, error="Vehicle name already exists for this company")
 
-                new_vehicle = Vehicle(name=vehicle_name, company_id=company_id)
+                new_vehicle = Vehicle(name=vehicle_name, user_id=user_id)
                 db.session.add(new_vehicle)
                 db.session.commit()
 
-                return self.response(200, name=vehicle_name, company_id=company_id)
+                return self.response(200, name=vehicle_name, user_id=user_id)
         except Exception as e:
             return self.response(500, error=str(e))
 
@@ -126,6 +124,7 @@ class ModelsAPI(BaseApi):
                 for row in result:
                     route_ids.add(row.Route.id)
                     routes.append({
+                        'label': row.Route.label,
                         'route_id': row.Route.id,
                         'route_points': []
                     })
@@ -147,20 +146,8 @@ class ModelsAPI(BaseApi):
         except Exception as e:
             return self.response(500, error=str(e))
 
-    @expose('/route_point', methods=['POST', 'GET'])
+    @expose('/route_point', methods=['POST'])
     def route_point(self):
-        try:
-            user_id = request.args['user_id']
-
-            if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
-
-            route_id = request.args['route_id']
-            if request.method == 'GET':
-
-                # Cant we return these in the route request?
-
-                return self.response(200, message=f"Hello {name}, got..")
             elif request.method == 'POST':
 
                 # todo - if route_id exists, return all route points associated with that route_id
