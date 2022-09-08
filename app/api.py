@@ -83,8 +83,11 @@ class ModelsAPI(BaseApi):
             db.session.add(new_vehicle)
             db.session.commit()
 
-            d = new_vehicle.to_dict()
-            return self.response(200, user_data=d)
+            return_obj = {'name': new_vehicle.name, 'id': new_vehicle.id,
+                          'user_id': user_id}
+
+            d = new_vehicle.to_dict()  # For some reason this becomes empty ???
+            return self.response(200, user_data=return_obj)
         except Exception as e:
             return self.response(500, error=str(e))
 
