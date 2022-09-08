@@ -4,7 +4,18 @@ from .models import User, Route, RoutePoint, Vehicle
 from flask import request
 import base64
 from sqlalchemy import select
-from .helpers import get_route_metrics
+from .helpers import get_route_metrics, drop_duplicate_ids
+
+# models routes
+models_route_base = '/api/models'
+user_route = '/user'
+vehicle_route = '/vehicle'
+route_route = '/route'
+route_point_route = '/route_point'
+
+# data routes
+data_route_base = '/api/data'
+user_data_route = '/userData'
 
 
 def user_id_is_valid(user_id):
@@ -17,26 +28,10 @@ def user_id_is_valid(user_id):
     return False
 
 
-def get_route_points_from_query_result(result):
-    route_points = []
-    for row in result:
-        route_points.append(
-            {
-                'route_id': row.RoutePoint.route_id,
-                'timestamp': row.RoutePoint.timestamp,
-                'lat': row.RoutePoint.lat,
-                'long': row.RoutePoint.long
-            }
-        )
-
-    return route_points
-
-
 class ModelsAPI(BaseApi):
+    route_base = models_route_base
 
-    route_base = '/api/models'
-
-    @expose('/user', methods=['POST', 'GET'])
+    @expose(user_route, methods=['POST', 'GET'])
     def user(self):
         try:
             username = request.args['username']
@@ -52,7 +47,7 @@ class ModelsAPI(BaseApi):
                 if first_result[0].password != password:
                     return self.response(409, message=f"Invalid password")
 
-                return self.response(200, id=first_result[0].id)
+                return self.response(200, user_data=first_result[0].to_dict())
 
             elif request.method == 'POST':
                 if first_result:
@@ -62,152 +57,108 @@ class ModelsAPI(BaseApi):
                 db.session.add(new_user)
                 db.session.commit()
 
-                return self.response(200, user_id=new_user.id)
+                data = new_user.to_dict()
+
+                return self.response(200, user_data=data)
 
         except Exception as e:
             return self.response(500, error=str(e))
 
-
-    @expose('/vehicle', methods=['POST', 'GET'])
+    @expose(vehicle_route, methods=['POST'])
     def vehicle(self):
         try:
             user_id = request.args['user_id']
+            if not user_id_is_valid(user_id):
+                return self.response(409, error="Invalid user ID...")
 
+            vehicle_name = request.args['vehicle_name']
+
+            result = db.session.execute(select(Vehicle).where(Vehicle.name == vehicle_name)
+                                        .where(Vehicle.user_id == user_id))
+
+            if len(result.all()):
+                return self.response(409, error="Vehicle name already exists for this company")
+
+            new_vehicle = Vehicle(name=vehicle_name, user_id=user_id)
+            db.session.add(new_vehicle)
+            db.session.commit()
+
+            d = new_vehicle.to_dict()
+            return self.response(200, user_data=d)
+        except Exception as e:
+            return self.response(500, error=str(e))
+
+    @expose(route_route, methods=['POST'])
+    def route(self):
+        try:
+            user_id = request.args['user_id']
+            if not user_id_is_valid(user_id):
+                return self.response(409, error="Invalid user ID...")
+
+            vehicle_id = request.args['vehicle_id']
+            label = request.args['label']
+            route = Route(label=label, vehicle_id=vehicle_id)
+            db.session.add(route)
+            db.session.commit()
+
+            return self.response(200, user_data=route.to_dict())
+        except Exception as e:
+            return self.response(500, error=str(e))
+
+    @expose(route_point_route, methods=['POST'])
+    def route_point(self):
+        try:
+            user_id = request.args['user_id']
+            if not user_id_is_valid(user_id):
+                return self.response(409, error="Invalid user ID...")
+
+            route_id = request.args['route_id']
+
+            # todo - if route_id exists, return all route points associated with that route_id
+
+            return self.response(200, message=f"Hello posted..")
+        except Exception as e:
+            return self.response(500, error=str(e))
+
+
+class DataAPI(BaseApi):
+    route_base = data_route_base
+
+    # Gets all data relevant to the users tracking services
+    @expose(user_data_route, methods=['GET'])
+    def userData(self):
+        try:
+            user_id = request.args['user_id']
             if not user_id_is_valid(user_id):
                 return self.response(409, error="Invalid user ID...")
 
             if request.method == 'GET':
                 result = db.session.execute(select(Vehicle).where(Vehicle.user_id == user_id))
+                result_all = result.all()
 
-                vehicles = []
-                for row in result:
-                    vehicle = {
-                        'id': row.Vehicle.id,
-                        'name': row.Vehicle.name
-                    }
-                    vehicles.append(vehicle)
+                vehicles = [v[0].to_dict() for v in result_all]
 
-                return self.response(200, data=vehicles)
-            elif request.method == 'POST':
-                vehicle_name = request.args['vehicle_name']
+                vehicle_ids = set(v['id'] for v in vehicles)
 
-                result = db.session.execute(select(Vehicle).where(Vehicle.name == vehicle_name)
-                                            .where(Vehicle.company_id == user_id))
+                result = db.session.execute(select(Route).where(Route.vehicle_id.in_(vehicle_ids)))
+                result_all = result.all()
+                routes = [r[0].to_dict() for r in result_all]
 
-                if not len(result.all()):
-                    return self.response(409, error="Vehicle name already exists for this company")
+                route_ids = set(r['id'] for r in routes)
 
-                new_vehicle = Vehicle(name=vehicle_name, user_id=user_id)
-                db.session.add(new_vehicle)
-                db.session.commit()
+                result = db.session.execute(select(RoutePoint).where(RoutePoint.route_id.in_(route_ids)))
+                route_points = [rp[0].to_dict() for rp in result.all()]
 
-                return self.response(200, name=vehicle_name, user_id=user_id)
-        except Exception as e:
-            return self.response(500, error=str(e))
+                data = {
+                    'vehicles': vehicles,
+                    'routes': routes,
+                    'route_points': route_points
+                }
 
-    @expose('/route', methods=['POST', 'GET'])
-    def route(self):
-        try:
-            user_id = request.args['user_id']
-
-            if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
-
-            vehicle_id = request.args['vehicle_id']
-
-            if request.method == 'GET':
-
-                result = db.session.execute(select(Route).where(Route.vehicle_id == vehicle_id))
-
-                routes = []
-                route_ids = set()
-                for row in result:
-                    route_ids.add(row.Route.id)
-                    routes.append({
-                        'label': row.Route.label,
-                        'route_id': row.Route.id,
-                        'route_points': []
-                    })
-
-                rp_result = db.session.execute(select(RoutePoint).where(RoutePoint.route_id.in_(route_ids)))
-
-                route_points = get_route_points_from_query_result(rp_result)
-
-                indexed_route_points = {x['route_id']: i for i, x in enumerate(routes)}
-                for route_point in route_points:
-                    routes[indexed_route_points['route_id']]['route_points'].append(route_point)
-
-                return self.response(200, data=routes)
-            elif request.method == 'POST':
-
-                # todo - if vehicle_id exists, create route with given vehicle_id
-
-                return self.response(200, message=f"Hello {name}, posted..")
-        except Exception as e:
-            return self.response(500, error=str(e))
-
-    @expose('/route_point', methods=['POST'])
-    def route_point(self):
-            elif request.method == 'POST':
-
-                # todo - if route_id exists, return all route points associated with that route_id
-
-                return self.response(200, message=f"Hello {name}, posted..")
-        except Exception as e:
-            return self.response(500, error=str(e))
-
-        @expose('/travel_metrics', methods=['GET'])
-        def travel_metrics(self):
-            try:
-                route_id = request.args['route_id']
-
-                result = db.session.execute(select(RoutePoint).where(RoutePoint.route_id == route_id))
-
-                route_points = get_route_points_from_query_result(result)
-
-                route_metrics = get_route_metrics(route_points)
-
-                return self.response(200, data=route_metrics)
-
-            except Exception as e:
-                return self.response(500, error=str(e))
-
-
-class MetricsAPI(BaseApi):
-
-    route_base = '/api/metrics'
-
-    @expose('/route', methods=['POST', 'GET'])
-    def fetch(self):
-        try:
-            username = request.args['username']
-            b64_password = request.args['password']
-      #      password = base64.b64decode(b64_password) todo - re-enable b64
-            password = b64_password
-            result = db.session.execute(select(User).where(User.name == username))
-            first_result = result.first()
-
-            if request.method == 'GET':
-                if not first_result:
-                    return self.response(404, message=f"No user found")
-
-                if first_result[0].password != password:
-                    return self.response(409, message=f"Invalid password")
-
-                return self.response(200, user_id=first_result[0].id)
-
-            elif request.method == 'POST':
-                if first_result:
-                    return self.response(402, message=f"User already exists")
-
-                new_user = User(name=username, password=password)
-                db.session.add(new_user)
-                db.session.commit()
-
-                return self.response(200, user_id=new_user.id)
-
+                return self.response(200, user_data=data)
         except Exception as e:
             return self.response(500, error=str(e))
 
 
 appbuilder.add_api(ModelsAPI)
+appbuilder.add_api(DataAPI)

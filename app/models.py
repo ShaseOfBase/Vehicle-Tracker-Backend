@@ -1,5 +1,4 @@
 import json
-
 from flask_sqlalchemy import SQLAlchemy
 import uuid
 from . import db
@@ -12,11 +11,16 @@ class RoutePoint(Model):
     id = Column(Integer, primary_key=True)
     timestamp = Column(DateTime, nullable=False)
     lat = Column(Float)
-    long = Column(Float)
+    lng = Column(Float)
     route_id = Column(Integer, ForeignKey('route.id'), nullable=False)
 
     def __repr__(self):
-        return f'{self.timestamp} - {self.lat}:{self.long}'
+        return f'rp_{self.id}'
+
+    def to_dict(self):
+        clean_dict = self.__dict__.copy()
+        clean_dict.pop('_sa_instance_state')
+        return clean_dict
 
 
 class Route(Model):
@@ -29,11 +33,9 @@ class Route(Model):
         return self.label
 
     def to_dict(self):
-        return json.dumps(
-            {'id': self.id,
-             'route_points': self.route_points,
-             'vehicle_id': self.vehicle_id}
-        )
+        clean_dict = self.__dict__.copy()
+        clean_dict.pop('_sa_instance_state')
+        return clean_dict
 
 
 class Vehicle(Model):
@@ -45,6 +47,11 @@ class Vehicle(Model):
     def __repr__(self):
         return f'{self.name}'
 
+    def to_dict(self):
+        clean_dict = self.__dict__.copy()
+        clean_dict.pop('_sa_instance_state')
+        return clean_dict
+
 
 class User(Model):
     id = Column(String(64), primary_key=True, default=lambda: str(uuid.uuid4()))
@@ -54,3 +61,9 @@ class User(Model):
 
     def __repr__(self):
         return f'{self.name}'
+
+    def to_dict(self):
+        clean_dict = self.__dict__.copy()
+        clean_dict.pop('_sa_instance_state')
+        clean_dict.pop('password')
+        return clean_dict

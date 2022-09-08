@@ -31,3 +31,17 @@ def get_route_metrics(route_points):
         'total_time': total_time_taken,
         'avg_speed': avg_speed
     }
+
+
+def drop_duplicate_ids(dict_list):
+    added = set()
+    new_list = []
+    for d in dict_list:
+        if d['id'] in added:
+            continue
+        new_list.append(d)
+        added.add(d['id'])
+
+    return new_list
+
+
