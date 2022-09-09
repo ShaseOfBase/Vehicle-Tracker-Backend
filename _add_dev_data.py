@@ -40,7 +40,7 @@ def add_route_points(route_ids, count):
     for route_id in route_ids:
         for _ in range(count):
             route_point = RoutePoint(timestamp=datetime.datetime.now(),
-                                     route_id=route_id, long=uniform(10, 70),
+                                     route_id=route_id, lng=uniform(10, 70),
                                      lat=uniform(10, 70))
             db.session.add(route_point)
 
@@ -59,4 +59,4 @@ def add_dev_data(user_id=None, new_user_name=''):
 
 
 if __name__ == '__main__':
-    add_dev_data(user_id='2cf6f6d8-9f05-4b5e-a848-53f80821c9e4')
+    add_dev_data(new_user_name='dev')

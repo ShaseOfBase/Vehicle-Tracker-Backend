@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from flask_appbuilder.api import BaseApi, expose
 from . import appbuilder, db
 from .models import User, Route, RoutePoint, Vehicle
@@ -47,7 +49,7 @@ class ModelsAPI(BaseApi):
                 if first_result[0].password != password:
                     return self.response(409, message=f"Invalid password")
 
-                return self.response(200, user_data=first_result[0].to_dict())
+                return self.response(200, **first_result[0].to_dict())
 
             elif request.method == 'POST':
                 if first_result:
@@ -57,9 +59,9 @@ class ModelsAPI(BaseApi):
                 db.session.add(new_user)
                 db.session.commit()
 
-                data = new_user.to_dict()
+                data = {'id': new_user.id}
 
-                return self.response(200, user_data=data)
+                return self.response(200, **data)
 
         except Exception as e:
             return self.response(500, error=str(e))
@@ -79,15 +81,14 @@ class ModelsAPI(BaseApi):
             if len(result.all()):
                 return self.response(409, error="Vehicle name already exists for this company")
 
-            new_vehicle = Vehicle(name=vehicle_name, user_id=user_id)
+            vehicle_data = {'name': vehicle_name, 'user_id': user_id}
+            new_vehicle = Vehicle(**vehicle_data)
             db.session.add(new_vehicle)
             db.session.commit()
 
-            return_obj = {'name': new_vehicle.name, 'id': new_vehicle.id,
-                          'user_id': user_id}
+            vehicle_data['id'] = new_vehicle.id
 
-            d = new_vehicle.to_dict()  # For some reason this becomes empty ???
-            return self.response(200, user_data=return_obj)
+            return self.response(200, **vehicle_data)
         except Exception as e:
             return self.response(500, error=str(e))
 
@@ -98,13 +99,18 @@ class ModelsAPI(BaseApi):
             if not user_id_is_valid(user_id):
                 return self.response(409, error="Invalid user ID...")
 
-            vehicle_id = request.args['vehicle_id']
-            label = request.args['label']
-            route = Route(label=label, vehicle_id=vehicle_id)
+            route_data = {
+                'label': request.args['label'],
+                'vehicle_id': int(request.args['vehicle_id'])
+            }
+
+            route = Route(**route_data)
             db.session.add(route)
             db.session.commit()
 
-            return self.response(200, user_data=route.to_dict())
+            route_data['id'] = route.id
+
+            return self.response(200, **route_data)
         except Exception as e:
             return self.response(500, error=str(e))
 
@@ -115,11 +121,19 @@ class ModelsAPI(BaseApi):
             if not user_id_is_valid(user_id):
                 return self.response(409, error="Invalid user ID...")
 
-            route_id = request.args['route_id']
+            rp_data = {
+                'lat': request.args['lat'],
+                'lng': request.args['lng'],
+                'timestamp': datetime.strptime(request.args['timestamp'], '%Y-%m-%dT%H:%M'),
+                'route_id': int(request.args['route_id'])
+            }
+            route_point = RoutePoint(**rp_data)
+            db.session.add(route_point)
+            db.session.commit()
 
-            # todo - if route_id exists, return all route points associated with that route_id
+            rp_data['id'] = route_point.id
 
-            return self.response(200, message=f"Hello posted..")
+            return self.response(200, **rp_data)
         except Exception as e:
             return self.response(500, error=str(e))
 
@@ -129,7 +143,7 @@ class DataAPI(BaseApi):
 
     # Gets all data relevant to the users tracking services
     @expose(user_data_route, methods=['GET'])
-    def userData(self):
+    def user_data(self):
         try:
             user_id = request.args['user_id']
             if not user_id_is_valid(user_id):
@@ -140,17 +154,21 @@ class DataAPI(BaseApi):
                 result_all = result.all()
 
                 vehicles = [v[0].to_dict() for v in result_all]
+                vehicles.sort(key=lambda x: x['name'].lower())
 
                 vehicle_ids = set(v['id'] for v in vehicles)
 
                 result = db.session.execute(select(Route).where(Route.vehicle_id.in_(vehicle_ids)))
                 result_all = result.all()
                 routes = [r[0].to_dict() for r in result_all]
+                routes.sort(key=lambda x: x['label'].lower())
 
                 route_ids = set(r['id'] for r in routes)
 
                 result = db.session.execute(select(RoutePoint).where(RoutePoint.route_id.in_(route_ids)))
                 route_points = [rp[0].to_dict() for rp in result.all()]
+
+                route_points.sort(key=lambda x: x['timestamp'])
 
                 data = {
                     'vehicles': vehicles,
@@ -158,7 +176,7 @@ class DataAPI(BaseApi):
                     'route_points': route_points
                 }
 
-                return self.response(200, user_data=data)
+                return self.response(200, **data)
         except Exception as e:
             return self.response(500, error=str(e))
 
