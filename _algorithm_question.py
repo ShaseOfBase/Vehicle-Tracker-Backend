@@ -1,5 +1,6 @@
 import math
 
+
 def get_next_smallest(array, num):
     if not isinstance(num, int):
         return -1
