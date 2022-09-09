@@ -5,8 +5,8 @@ from app.models import Route, RoutePoint, Vehicle, User
 from _test_data import get_random_id
 
 
-def add_user(name):
-    user = User(name=name, password='abc123')
+def add_user(name, password):
+    user = User(name=name, password=password)
     db.session.add(user)
     db.session.commit()
     return user.id
@@ -47,11 +47,11 @@ def add_route_points(route_ids, count):
     db.session.commit()
 
 
-def add_dev_data(user_id=None, new_user_name=''):
+def add_dev_data(user_id=None, new_user_name='', password=''):
     if not user_id and not new_user_name:
         raise ValueError('need either user_id or new_user_name')
     if new_user_name:
-        user_id = add_user(new_user_name)
+        user_id = add_user(new_user_name, password)
 
     vehicle_ids = add_vehicles(user_id, 5)
     route_ids = add_routes(vehicle_ids, 5)
@@ -59,4 +59,4 @@ def add_dev_data(user_id=None, new_user_name=''):
 
 
 if __name__ == '__main__':
-    add_dev_data(new_user_name='dev')
+    add_dev_data(new_user_name='dev', password='abc123')
