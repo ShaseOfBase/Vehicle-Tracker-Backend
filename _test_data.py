@@ -12,7 +12,7 @@ def get_random_id(length):
 
 @pytest.fixture
 def test_users():
-    name = 'test'
+    name = f'test_{random.random()}'
     user = User(name=name, password='abc123')
     db.session.add(user)
     db.session.commit()
@@ -41,7 +41,7 @@ def test_route_points(test_routes):
     route_points = set()
     for _ in range(rp_length):
         route_point = RoutePoint(timestamp=datetime.datetime.now(),
-                                 route_id=test_routes, long=uniform(10, 70),
+                                 route_id=test_routes, lng=uniform(10, 70),
                                  lat=uniform(10, 70))
         db.session.add(route_point)
 
