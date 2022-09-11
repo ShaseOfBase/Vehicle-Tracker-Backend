@@ -2,7 +2,7 @@ import datetime
 from random import random, uniform
 from app import db
 from app.models import Route, RoutePoint, Vehicle, User
-from _test_data import get_random_id
+from test_data import get_random_id
 
 
 def add_user(name, password):
