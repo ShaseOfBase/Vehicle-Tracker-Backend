@@ -1,6 +1,6 @@
 from flask import render_template
 from . import appbuilder, db
-
+from . import models
 
 @appbuilder.app.errorhandler(404)
 def page_not_found(e):
