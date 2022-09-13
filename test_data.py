@@ -25,7 +25,6 @@ def test_users():
     db.session.commit()
 
 
-
 @pytest.fixture
 def test_vehicles(test_users):
     name = f'TestSubaru{get_random_id(5)}'
