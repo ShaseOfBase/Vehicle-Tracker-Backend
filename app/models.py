@@ -40,7 +40,7 @@ class Route(Model):
 
 class Vehicle(Model):
     id = Column(Integer, primary_key=True)
-    name = Column(String(128), unique=True)
+    name = Column(String(128))
     routes = relationship('Route', backref='vehicle')
     user_id = Column(String(64), ForeignKey('user.id'), nullable=False)
 
