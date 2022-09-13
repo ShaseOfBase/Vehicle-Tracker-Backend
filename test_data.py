@@ -5,6 +5,7 @@ import pytest
 from app import db
 from app.models import User, Route, RoutePoint, Vehicle
 
+route_point_count = 3
 
 def get_random_id(length):
     return ''.join([str(randint(0, 9)) for _ in range(length)])
@@ -53,8 +54,9 @@ def test_routes(test_vehicles):
     db.session.commit()
 
 
+@pytest.fixture
 def test_route_points(test_routes):
-    rp_length = 3
+    rp_length = route_point_count
     route_points = set()
     for _ in range(rp_length):
         route_point = RoutePoint(timestamp=datetime.datetime.now(),
@@ -65,22 +67,15 @@ def test_route_points(test_routes):
 
     db.session.commit()
 
-    ids = {rp.id for rp in route_points}
+    yield route_points
 
-    try:
-        assert len(ids) == rp_length
+    for rp in route_points:
+        db.session.delete(rp)
 
-        for route_point in route_points:
-            db.session.delete(route_point)
+    db.session.commit()
 
-        db.session.commit()
-    except Exception as e:
-        for route_point in route_points:
-            db.session.delete(route_point)
 
-        db.session.commit()
-
-        assert False
-
+def test_data_inserts(test_route_points):
+    assert len(test_route_points) == route_point_count
 
 
