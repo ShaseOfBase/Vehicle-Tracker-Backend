@@ -14,20 +14,16 @@ def get_random_id(length):
 
 @pytest.fixture
 def test_users():
-    try:
-        name = f'test_{random.random()}'
-        user = User(name=name, password='abc123')
-        db.session.add(user)
-        db.session.commit()
+    name = f'test_{random.random()}'
+    user = User(name=name, password='abc123')
+    db.session.add(user)
+    db.session.commit()
 
-        yield user.id
+    yield user.id
 
-        db.session.delete(user)
-        db.session.commit()
-    except Exception as e:
-        print(1)
-    #    db.session.delete(user)
-    #    db.session.commit()
+    db.session.delete(user)
+    db.session.commit()
+
 
 
 @pytest.fixture
