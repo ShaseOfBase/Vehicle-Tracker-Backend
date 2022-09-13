@@ -5,3 +5,4 @@ pytest~=7.1.3
 flask-appbuilder
 pymysql
 flask-cors
+cryptography
