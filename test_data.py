@@ -7,6 +7,7 @@ from app.models import User, Route, RoutePoint, Vehicle
 
 route_point_count = 3
 
+
 def get_random_id(length):
     return ''.join([str(randint(0, 9)) for _ in range(length)])
 
