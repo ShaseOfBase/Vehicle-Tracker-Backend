@@ -1,12 +1,11 @@
 from datetime import datetime
-
 from flask_appbuilder.api import BaseApi, expose
 from . import appbuilder, db
 from .models import User, Route, RoutePoint, Vehicle
 from flask import request
 import base64
 from sqlalchemy import select
-from .helpers import get_route_metrics, drop_duplicate_ids
+
 
 # models routes
 models_route_base = '/api/models'
