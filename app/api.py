@@ -122,8 +122,8 @@ class ModelsAPI(BaseApi):
                 return self.response(409, error="Invalid user ID...")
 
             rp_data = {
-                'lat': request.args['lat'],
-                'lng': request.args['lng'],
+                'lat': float(request.args['lat']),
+                'lng': float(request.args['lng']),
                 'timestamp': datetime.strptime(request.args['timestamp'], '%Y-%m-%dT%H:%M'),
                 'route_id': int(request.args['route_id'])
             }
