@@ -43,16 +43,16 @@ class ModelsAPI(BaseApi):
 
             if request.method == 'GET':
                 if not first_result:
-                    return self.response(404, message=f"No user found")
+                    return self.response(400, message="No user found")
 
                 if first_result[0].password != password:
-                    return self.response(409, message=f"Invalid password")
+                    return self.response(400, message="Invalid password")
 
                 return self.response(200, **first_result[0].to_dict())
 
             elif request.method == 'POST':
                 if first_result:
-                    return self.response(402, message=f"User already exists")
+                    return self.response(400, message="User already exists")
 
                 new_user = User(name=username, password=password)
                 db.session.add(new_user)
@@ -70,7 +70,7 @@ class ModelsAPI(BaseApi):
         try:
             user_id = request.args['user_id']
             if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
+                return self.response(400, error="Invalid user ID...")
 
             vehicle_name = request.args['vehicle_name']
 
@@ -78,7 +78,7 @@ class ModelsAPI(BaseApi):
                                         .where(Vehicle.user_id == user_id))
 
             if len(result.all()):
-                return self.response(409, error="Vehicle name already exists for this company")
+                return self.response(400, error="Vehicle name already exists for this company")
 
             vehicle_data = {'name': vehicle_name, 'user_id': user_id}
             new_vehicle = Vehicle(**vehicle_data)
@@ -96,7 +96,7 @@ class ModelsAPI(BaseApi):
         try:
             user_id = request.args['user_id']
             if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
+                return self.response(400, error="Invalid user ID...")
 
             route_data = {
                 'label': request.args['label'],
@@ -118,7 +118,7 @@ class ModelsAPI(BaseApi):
         try:
             user_id = request.args['user_id']
             if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
+                return self.response(400, error="Invalid user ID...")
 
             rp_data = {
                 'lat': float(request.args['lat']),
@@ -146,7 +146,7 @@ class DataAPI(BaseApi):
         try:
             user_id = request.args['user_id']
             if not user_id_is_valid(user_id):
-                return self.response(409, error="Invalid user ID...")
+                return self.response(400, error="Invalid user ID...")
 
             if request.method == 'GET':
                 result = db.session.execute(select(Vehicle).where(Vehicle.user_id == user_id))
@@ -155,14 +155,14 @@ class DataAPI(BaseApi):
                 vehicles = [v[0].to_dict() for v in result_all]
                 vehicles.sort(key=lambda x: x['name'].lower())
 
-                vehicle_ids = set(v['id'] for v in vehicles)
+                vehicle_ids = {v['id'] for v in vehicles}
 
                 result = db.session.execute(select(Route).where(Route.vehicle_id.in_(vehicle_ids)))
                 result_all = result.all()
                 routes = [r[0].to_dict() for r in result_all]
                 routes.sort(key=lambda x: x['label'].lower())
 
-                route_ids = set(r['id'] for r in routes)
+                route_ids = {r['id'] for r in routes}
 
                 result = db.session.execute(select(RoutePoint).where(RoutePoint.route_id.in_(route_ids)))
                 route_points = [rp[0].to_dict() for rp in result.all()]
