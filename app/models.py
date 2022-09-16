@@ -4,7 +4,7 @@ import uuid
 from . import db
 from flask_appbuilder import Model
 from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Float
-from sqlalchemy.orm import relationship, backref
+from sqlalchemy.orm import relationship
 
 
 class RoutePoint(Model):
