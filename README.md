@@ -1,4 +1,4 @@
-# mms_gps_back
+# Vehicle Tracker Backend
 
 To run
 1. Create a new virtual environment (Python 3.8+ should be fine)
